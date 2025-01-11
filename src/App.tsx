@@ -1,42 +1,76 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { CssBaseline, Switch, FormControlLabel, Box, Container, Typography } from '@mui/material';
+import Editor from './components/editor';
+import localforage from 'localforage';
 
-interface EditorProps {
-  code: string; 
-  setCode: (newCode: string) => void; 
-}
-
-const Editor: React.FC<EditorProps> = ({ code, setCode }) => {
-  const editorRef = useRef<HTMLDivElement | null>(null)
+function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [code, setCode] = useState('');
 
   useEffect(() => {
-    const iframe = document.createElement('iframe');
-    iframe.src = "https://onecompiler.com/embed?language=nodejs";
-    iframe.style.width = "100%";
-    iframe.style.height = "500px";
-    iframe.style.border = "none";
-    iframe.onload = () => {
-      const contentWindow = iframe.contentWindow; 
-      if (contentWindow) { 
-        contentWindow.postMessage({ type: 'SET_CODE', code }, '*');
-        contentWindow.addEventListener('message', (event) => {
-          if (event.data.type === 'CODE_CHANGE') {
-            setCode(event.data.code);
-          }
-        });
+    const loadSavedCode = async () => {
+      try {
+        const savedCode = await localforage.getItem<string>('savedCode');
+        if (savedCode) {
+          setCode(savedCode);
+        }
+      } catch (error) {
+        console.error('Error loading saved code:', error);
       }
     };
+    loadSavedCode();
+  }, []);
 
-    if (editorRef.current) { 
-      editorRef.current.appendChild(iframe);
-    }
-    return () => {
-      if (editorRef.current) { 
-        editorRef.current.innerHTML = '';
+  
+  useEffect(() => {
+    const saveCode = async () => {
+      try {
+        await localforage.setItem('savedCode', code);
+      } catch (error) {
+        console.error('Error saving code:', error);
       }
     };
-  }, [code, setCode]);
+    saveCode();
+  }, [code]);
 
-  return <div ref={editorRef}></div>
+  
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
+  
+  const theme = createTheme({
+    palette: {
+      mode: isDarkMode ? 'dark' : 'light',
+    },
+  });
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Container maxWidth="md" sx={{ mt: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h4">OneCompiler</Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isDarkMode}
+                onChange={toggleDarkMode}
+                color="primary"
+              />
+            }
+            label="Dark Mode"
+          />
+        </Box>
+        <Editor 
+          code={code} 
+          setCode={setCode} 
+          isDarkMode={isDarkMode} 
+        />
+      </Container>
+    </ThemeProvider>
+  );
 }
 
-export default Editor
+export default App;
