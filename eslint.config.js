@@ -3,6 +3,7 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
+import babelParser from '@babel/eslint-parser'
 
 export default tseslint.config(
   { ignores: ['dist'] },
@@ -12,6 +13,13 @@ export default tseslint.config(
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      parser: babelParser,
+      parserOptions: {
+        requireConfigFile: false,
+        babelOptions: {
+          presets: ['@babel/preset-react']
+        }
+      }
     },
     plugins: {
       'react-hooks': reactHooks,
